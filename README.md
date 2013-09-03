@@ -91,8 +91,8 @@ void MainWindow::paintEvent(QPaintEvent* e) {
         // We complete the wiring up of our G3DWidgets by binding a specific GLG3D::GApp
         // to each of them.
         //
-        m_starterAppWidget->pushLoopBody(m_starterApp.get());
-        m_pixelShaderAppWidget->pushLoopBody(m_pixelShaderApp.get());
+        m_starterAppWidget->pushLoopBody(m_starterApp);
+        m_pixelShaderAppWidget->pushLoopBody(m_pixelShaderApp);
 
         m_g3dWidgetsInitialized = true;
     }
