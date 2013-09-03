@@ -71,8 +71,8 @@ void MainWindow::paintEvent(QPaintEvent* e) {
         m_pixelShaderAppWidget->initialize();
 
         //
-        // Now that we have initialized our G3DWidgets, we can initialized our
-        // GLG3D::RenderDevice. Note that arbitrarily choose a single G3DWidget to
+        // Now that we have initialized our G3DWidgets, we can initialize our
+        // GLG3D::RenderDevice. Note that we arbitrarily choose a single G3DWidget to
         // initialize our GLG3D::RenderDevice. Instead of passing in m_starterAppWidget,
         // we could have just as easily passed in m_pixelShaderAppWidget. We need to
         // pass in some G3DWidget to prevent the GLG3D::RenderDevice from creating its
