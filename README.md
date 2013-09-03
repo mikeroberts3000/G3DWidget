@@ -1,7 +1,9 @@
 G3DWidget
 =========
 
-A Qt Widget that can host 3D rendering code from the G3D Innovation Engine. Demo application included.
+G3DWidget is a Qt Widget class that can host 3D rendering code from the G3D Innovation Engine. G3DWidget has been carefully designed so that multiple G3DWidget objects can co-exist in the same application. Demo application included.
+
+![Alt text](/documentation/images/screenshot.jpg)
 
 ### Requirements
 
