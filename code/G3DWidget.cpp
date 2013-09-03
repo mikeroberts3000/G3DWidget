@@ -111,8 +111,6 @@ void G3DWidget::update() {
 void G3DWidget::terminate() {
     MOJO_RELEASE_ASSERT(m_initialized);
 
-    popLoopBody();
-
     // Close joysticks, if opened
     for (int j = 0; j < m_joy.size(); ++j) {
         SDL_JoystickClose(m_joy[j]);

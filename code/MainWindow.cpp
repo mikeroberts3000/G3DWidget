@@ -35,6 +35,7 @@ MainWindow::MainWindow(QWidget* parent) :
     m_pixelShaderAppWidget  (new G3DWidget(m_g3dWidgetOpenGLContext, m_renderDevice, this)),
     m_timer                 (new QTimer(this)),
     m_g3dWidgetsInitialized (false) {
+
     m_ui->setupUi(this);
     m_starterAppWidget->setMinimumSize(800, 800);
     m_pixelShaderAppWidget->setMinimumSize(400, 400);
@@ -54,7 +55,8 @@ MainWindow::MainWindow(QWidget* parent) :
     m_timer->start(15);
 }
 
-MainWindow::~MainWindow() {}
+MainWindow::~MainWindow() {
+}
 
 void MainWindow::paintEvent(QPaintEvent* e) {
 
@@ -112,13 +114,29 @@ void MainWindow::paintEvent(QPaintEvent* e) {
 }
 
 void MainWindow::closeEvent(QCloseEvent*) {
+
+    m_timer->stop();
+
+    //
+    // To clean up our G3DWidgets, we call popLoopBody() and then terminate().
+    //
+    m_starterAppWidget->popLoopBody();
+    m_pixelShaderAppWidget->popLoopBody();
     m_starterAppWidget->terminate();
     m_pixelShaderAppWidget->terminate();
+
+    //
+    // To clean up our GLG3D::RenderDevice, we call cleanup() as usual.
+    //
     m_renderDevice->cleanup();
-    m_timer->stop();
 }
 
 void MainWindow::onTimerTimeout() {
+
+    //
+    // To invoke the loop body of each GLG3D::GApp, we call update() on its
+    // corresponding G3DWidget.
+    //
     m_starterAppWidget->update();
     m_pixelShaderAppWidget->update();
 }
