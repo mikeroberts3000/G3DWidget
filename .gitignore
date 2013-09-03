@@ -1,0 +1,5 @@
+
+*.user
+
+build-G3DWidgetDemo-Desktop-Debug
+build-G3DWidgetDemo-Desktop-Release

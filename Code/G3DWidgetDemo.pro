@@ -68,7 +68,11 @@ SOURCES +=             \
     PixelShaderApp.cpp \
     StarterApp.cpp     \
     Printf.cpp         \
-    G3DWidget.cpp
+    G3DWidget.cpp      \
 
-OBJECTIVE_SOURCES += \
-    G3DWidgetOpenGLContext.mm
+OBJECTIVE_SOURCES +=          \
+    G3DWidgetOpenGLContext.mm \
+
+QMAKE_POST_LINK +=              \
+    cp ../bin/*    $$OUT_PWD && \
+    cp ../shader/* $$OUT_PWD    \
