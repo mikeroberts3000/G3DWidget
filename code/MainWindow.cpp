@@ -83,7 +83,10 @@ void MainWindow::paintEvent(QPaintEvent* e) {
 
         //
         // Now that we have have initialized our GLG3D::RenderDevice, we can create our
-        // GLG3D::GApps. Note that the G3DWidget we pass in must be current.
+        // GLG3D::GApps. Note that the G3DWidget we pass in to each GLG3D::GApp constructor
+        // must be current. Note also that the G3D::StarterApp and G3D::PixelShaderApp classes
+        // created here are identical to those in the starter and pixelShader sample applications
+        // from the G3D 9.00 source code. 
         //
         m_starterAppWidget->makeCurrent();
         m_starterApp = std::tr1::shared_ptr<G3D::GApp>(new G3D::StarterApp(
