@@ -24,6 +24,7 @@ G3DWidget is a Qt Widget class that can host 3D rendering code from the G3D Inno
 3. Build G3DWidget/Code/G3DWidgetDemo.pro in Qt Creator. In the Projects > Build and Run > Manage Kits... > Build and Run > Kits menu, set the compiler to Clang (x86 64bit) and set your Qt mkspec to "unsupported/macx-clang". Depending on your exact version of Qt, the exact string you need to use for your Qt mkspec might vary slightly. In the Projects > Build and Run > Build Environment, be sure to add the G3D9DATA environment variable.
 4. Now you can run and debug the G3DWidgetDemo application.
 
+If you hit any roadblocks, you can check out my <a href='https://www.evernote.com/shard/s231/sh/8bb33cf0-d293-40b1-97e3-5a83e8a06ccf/ad73af4d68a2f062ad22c4557d5136cc'>development environment setup instructions</a>.
 ### Usage Example
 
 ```cpp
@@ -109,4 +110,4 @@ void MainWindow::onTimerTimeout() {
 }
 ```
 
-
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/249bed55fb0fcff9c1c23df10f8de899 "githalytics.com")](http://githalytics.com/mroberts3000/G3DWidget)
