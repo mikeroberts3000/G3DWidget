@@ -73,6 +73,6 @@ SOURCES +=             \
 OBJECTIVE_SOURCES +=          \
     G3DWidgetOpenGLContext.mm \
 
-QMAKE_POST_LINK +=              \
-    cp ../bin/*    $$OUT_PWD && \
-    cp ../shader/* $$OUT_PWD    \
+QMAKE_POST_LINK +=               \
+    cp ../bin/*     $$OUT_PWD && \
+    cp ../shaders/* $$OUT_PWD    \
