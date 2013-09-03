@@ -14,7 +14,7 @@ G3DWidget is a Qt Widget written in C++ that can host 3D rendering code from the
   * http://sourceforge.net/projects/g3d/files/g3d-cpp/9.00/G3D-9.00-src.zip/download
 * __The Qt SDK__. I'm using Qt 4.8.2 but this code should also work for other recent versions of Qt.
   * http://download.qt-project.org/archive/qt/4.8/4.8.2/qt-mac-opensource-4.8.2.dmg
-* __Qt Creator__. I'm using Qt Creator 2.8.1 but this code should work for other recent versions of Qt Creator.
+* __Qt Creator__. I'm using Qt Creator 2.8.1 but this code should work for other recent versions of Qt Creator. Advanced users can work directly from the commandline using qmake and make. See the Qt Creator build output for guidance.
   * http://download.qt-project.org/official_releases/qtcreator/2.8/2.8.1/qt-creator-mac-opensource-2.8.1.dmg
 
 ### Build Instructions
@@ -82,14 +82,14 @@ void MainWindow::paintEvent(QPaintEvent* e) {
         // from the G3D 9.00 source code. 
         //
         m_starterAppWidget->makeCurrent();
-        m_starterApp = new G3D::StarterApp(G3D::GApp::Settings(), m_starterAppWidget, m_renderDevice.get()));
+        m_starterApp = new G3D::StarterApp(G3D::GApp::Settings(), m_starterAppWidget, m_renderDevice);
 
         m_pixelShaderAppWidget->makeCurrent();
-        m_pixelShaderApp = new G3D::PixelShaderApp(G3D::GApp::Settings(), m_pixelShaderAppWidget, m_renderDevice.get()));
+        m_pixelShaderApp = new G3D::PixelShaderApp(G3D::GApp::Settings(), m_pixelShaderAppWidget, m_renderDevice);
 
         //
-        // We complete the wiring up of our G3DWidgets by binding a specific GLG3D::GApp
-        // to each of them.
+        // We complete the wiring up of our G3DWidgets by calling pushLoopBody(...) and
+        // passing in a specific GLG3D::GApp
         //
         m_starterAppWidget->pushLoopBody(m_starterApp);
         m_pixelShaderAppWidget->pushLoopBody(m_pixelShaderApp);
@@ -99,12 +99,29 @@ void MainWindow::paintEvent(QPaintEvent* e) {
 }
 
 void MainWindow::closeEvent(QCloseEvent*) {
+
+    m_timer->stop();
+
+    //
+    // To clean up our G3DWidgets, we call popLoopBody() and then terminate().
+    //
+    m_starterAppWidget->popLoopBody();
+    m_pixelShaderAppWidget->popLoopBody();
     m_starterAppWidget->terminate();
     m_pixelShaderAppWidget->terminate();
+    
+    //
+    // To clean up our GLG3D::RenderDevice, we call cleanup() as usual.
+    //
     m_renderDevice->cleanup();
 }
 
 void MainWindow::onTimerTimeout() {
+
+    //
+    // To invoke the loop body of each GLG3D::GApp, we call update() on its
+    // corresponding G3DWidget.
+    //
     m_starterAppWidget->update();
     m_pixelShaderAppWidget->update();
 }
