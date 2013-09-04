@@ -104,9 +104,8 @@ void MainWindow::closeEvent(QCloseEvent*) {
 
     //
     // To clean up our G3DWidgets, we call popLoopBody() and then terminate(). To clean up
-    // our GLG3D::RenderDevice, we call cleanup() as usual. As a matter of style, we call
-    // these cleanup methods in the opposite order as we called their corresponding
-    // initialization methods.
+    // our GLG3D::RenderDevice, we call cleanup() as usual. We call these cleanup methods in
+    // the opposite order as we called their corresponding initialization methods.
     //
     m_starterAppWidget->popLoopBody();
     m_pixelShaderAppWidget->popLoopBody();
