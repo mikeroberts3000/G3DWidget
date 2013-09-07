@@ -1,9 +1,11 @@
 G3DWidget
 =========
 
-This repository contains the source code for G3DWidget. G3DWidget is a Qt Widget written in C++ that can host 3D rendering code from the G3D Innovation Engine. The G3DWidget class has been carefully designed so that multiple G3DWidget objects can coexist in the same application. Demo application included.
-
 ![Alt text](/documentation/images/screenshot.jpg)
+
+### Introduction
+
+This repository contains the source code for G3DWidget. G3DWidget is a Qt Widget written in C++ that can host 3D rendering code from the G3D Innovation Engine. The G3DWidget class has been carefully designed so that multiple G3DWidget objects can coexist in the same application. Demo application included.
 
 ### Requirements
 
