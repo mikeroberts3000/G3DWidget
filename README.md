@@ -1,6 +1,3 @@
-G3DWidget
-=========
-
 ![Alt text](/documentation/images/screenshot.jpg)
 
 ### Introduction
