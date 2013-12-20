@@ -294,8 +294,7 @@ GApp::GApp(const Settings& settings, OSWindow* window, RenderDevice* rd) :
         _hasUserCreatedRenderDevice = true;
         _hasUserCreatedWindow       = true;
         renderDevice = rd;
-    }
-    else {
+    } else {
         _hasUserCreatedRenderDevice = false;
         renderDevice = new RenderDevice();
         if (window != NULL) {
