@@ -1,4 +1,4 @@
-#version 120 // -*- c++ -*-
+#version 330 // -*- c++ -*-
 /**
  Per-pixel Phong Shading
 
@@ -13,23 +13,23 @@
 /////////////////////////////////////////////////////////////
 // "Uniform" constants passed from C++
 
-/** Intensity of the diffuse term. */
-uniform float   diffuseScalar;
+/** Intensity of the lambertian term. */
+uniform float   lambertianScalar;
 
-/** Diffuse/ambient surface color */
-uniform vec3    diffuseColor;
+/** Lambertian/ambient surface color */
+uniform vec3    lambertianColor;
 
-/** Intensity of the specular term. */
-uniform float   specularScalar;
+/** Intensity of the glossy term. */
+uniform float   glossyScalar;
 
-/** Specular surface color.  Used for both glossy and perfect reflection. */
-uniform vec3    specularColor;
+/** Glossy surface color.  Used for both glossy and perfect reflection. */
+uniform vec3    glossyColor;
 
-/** Phong exponent; 100 = sharp highlight, 1 = broad highlight */
-uniform float   shine;
+/** Smoothness of the microfacet surface. 0 = rough, 1 = mirror */
+uniform float   smoothness;
 
 /** Intensity of perfect reflections */
-uniform float   reflect;
+uniform float   reflectScalar;
 
 /** Unit world space direction to the (infinite, directional) light source */
 uniform vec3    wsLight;
@@ -43,15 +43,13 @@ uniform vec3    ambient;
 /** Environment cube map used for reflections */
 uniform samplerCube environmentMap;
 
-/** Modulates the environment map values to simulate darkness or increase
-   dynamic range when tone mapping. */
-uniform float   environmentConstant;
-
 /////////////////////////////////////////////////////////////
 // "Varying" variables passed from the vertex shader
 
-varying vec3    wsInterpolatedNormal;
-varying vec3    wsInterpolatedEye;
+in vec3    wsInterpolatedNormal;
+in vec3    wsInterpolatedEye;
+
+out vec3 g3d_FragColor;
 
 void main() {
 
@@ -64,12 +62,16 @@ void main() {
     // Unit vector giving the direction of perfect reflection into the eye
     vec3 wsReflect = 2.0 * dot(wsEye, wsNormal) * wsNormal - wsEye;
 
-    // The "reflect" function is part of the GLSL specification but some NVIDIA drivers do not include it.
-    // If you wanted to use that function, you could use the following line:
+    // The "reflect" function is part of the GLSL specification but
+    // some drivers do not include it.  If you wanted to use
+    // that function, you could use the following line:
+
     // vec3 wsReflect = -reflect(wsEye, wsNormal);
     
-    gl_FragColor.rgb =
-        diffuseScalar  * diffuseColor  * (ambient + (max(dot(wsNormal, wsLight), 0.0) * lightColor)) +
-        specularScalar * specularColor * (8.0 + shine) / 8.0 * pow(max(dot(wsReflect, wsLight), 0.0), shine) * lightColor +
-        reflect        * specularColor * textureCube(environmentMap, wsReflect).rgb * environmentConstant;
+    float shine = pow(1e4, smoothness);
+
+    g3d_FragColor =
+        lambertianScalar * lambertianColor * (ambient + (max(dot(wsNormal, wsLight), 0.0) * lightColor)) +
+        glossyScalar * glossyColor * (8.0 + shine) / 8.0 * pow(max(dot(wsReflect, wsLight), 0.0), shine) * lightColor +
+        reflectScalar * glossyColor * texture(environmentMap, wsReflect).rgb;
 }
