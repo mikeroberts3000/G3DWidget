@@ -9,18 +9,13 @@ namespace G3D
 
 class StarterApp : public GApp {
 protected:
-    bool                m_showWireframe;
 
     /** Called from onInit */
     void makeGUI();
 
-    /** Called from onInit */
-    void makeGBuffer();
-
 public:
 
     StarterApp(const GApp::Settings& settings = GApp::Settings(), OSWindow* window=NULL, RenderDevice* rd=NULL);
-
     virtual void onInit() override;
     virtual void onAI() override;
     virtual void onNetwork() override;

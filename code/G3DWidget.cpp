@@ -3,16 +3,18 @@
 #include "G3DWidget.hpp"
 
 #include <QtCore/QUrl>
+#include <QtCore/QMimeData>
 #include <QtGui/QResizeEvent>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QDragEnterEvent>
 #include <QtGui/QDropEvent>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QClipboard>
-#include <QtGui/QApplication>
+#include <QtWidgets/QApplication>
 
 #include <GLG3D/GLCaps.h>
 #include <GLG3D/RenderDevice.h>
+#include <GLG3D/GApp.h>
 
 #include "Assert.hpp"
 #include "Printf.hpp"
@@ -22,18 +24,26 @@ namespace mojo
 {
 
 G3DWidget::G3DWidget(
-    std::tr1::shared_ptr<G3DWidgetOpenGLContext> g3dWidgetOpenGLContext,
-    std::tr1::shared_ptr<G3D::RenderDevice>      renderDevice,
+    std::shared_ptr<G3DWidgetOpenGLContext> g3dWidgetOpenGLContext,
+    std::shared_ptr<G3D::RenderDevice>      renderDevice,
     QWidget* parent) :
     QWidget                 (parent),
     m_g3dWidgetOpenGLContext(g3dWidgetOpenGLContext),
     m_initialized           (false),
     m_mousePressEventButtons(Qt::NoButton),
     m_mouseVisible          (true),
-    m_previouslyActive      (false) {
+    m_previouslyActive      (false),
+    m_devicePixelRatio      (1.0f),
+    m_GApp                  (NULL) {
 
     MOJO_RELEASE_ASSERT(g3dWidgetOpenGLContext);
     MOJO_RELEASE_ASSERT(renderDevice);
+
+    QApplication* app = dynamic_cast<QApplication*>(QCoreApplication::instance());
+
+    MOJO_RELEASE_ASSERT(app != NULL);
+
+    m_devicePixelRatio = app->devicePixelRatio();
 
     setAttribute(Qt::WA_PaintOnScreen);
     setAttribute(Qt::WA_NoSystemBackground);
@@ -73,8 +83,8 @@ void G3DWidget::initialize() {
 
     m_settings.x      = 0;
     m_settings.y      = 0;
-    m_settings.width  = QWidget::width();
-    m_settings.height = QWidget::height();
+    m_settings.width  = QWidget::width() * m_devicePixelRatio;
+    m_settings.height = QWidget::height() * m_devicePixelRatio;
     m_initialized     = true;
 
     // make this G3DWidget the current rendering target
@@ -87,6 +97,7 @@ void G3DWidget::initialize() {
 void G3DWidget::update() {
     MOJO_RELEASE_ASSERT(m_initialized);
 
+    G3D::GApp::setCurrent(m_GApp);
     OSWindow::makeCurrent();
 
     // construct a G3D::GEventType::FOCUS event
@@ -101,7 +112,6 @@ void G3DWidget::update() {
         fireEvent(e);
     }
 
-    // execute the G3D::GApp loop
     executeLoopBody();
 
     // swap buffers explicitly
@@ -134,6 +144,9 @@ void G3DWidget::pushLoopBody(void (*body)(void*), void* arg) {
     MOJO_RELEASE_ASSERT(arg            != NULL);
     MOJO_RELEASE_ASSERT(m_renderDevice != NULL);
 
+    m_GApp = NULL;
+    G3D::GApp::setCurrent(NULL);
+
     OSWindow::makeCurrent();
     m_renderDevice->setSwapBuffersAutomatically(false);
     OSWindow::pushLoopBody(body, arg);
@@ -144,6 +157,9 @@ void G3DWidget::pushLoopBody(G3D::GApp* app) {
     MOJO_RELEASE_ASSERT(app            != NULL);
     MOJO_RELEASE_ASSERT(m_renderDevice != NULL);
 
+    m_GApp = app;
+    G3D::GApp::setCurrent(m_GApp);
+
     OSWindow::makeCurrent();
     m_renderDevice->setSwapBuffersAutomatically(false);
     OSWindow::pushLoopBody(app);
@@ -152,6 +168,9 @@ void G3DWidget::pushLoopBody(G3D::GApp* app) {
 void G3DWidget::popLoopBody() {
     MOJO_RELEASE_ASSERT(m_initialized);
     OSWindow::popLoopBody();
+
+    m_GApp = NULL;
+    G3D::GApp::setCurrent(NULL);
 }
 
 void G3DWidget::reallyMakeCurrent() const {
@@ -161,7 +180,7 @@ void G3DWidget::reallyMakeCurrent() const {
     m_g3dWidgetOpenGLContext->setView(winId());
 
     if (m_renderDevice->initialized()) {
-        G3D::Rect2D newViewport = G3D::Rect2D::xywh(0.0f, 0.0f, (float)QWidget::width(), (float)QWidget::height());
+        G3D::Rect2D newViewport = G3D::Rect2D::xywh(0.0f, 0.0f, (float)m_settings.width, (float)m_settings.height);
         m_renderDevice->setWindow((G3D::OSWindow*)this);
         m_renderDevice->setViewport(newViewport);
     }
@@ -197,12 +216,12 @@ void G3DWidget::setClientRect(const G3D::Rect2D&) {
 
 int G3DWidget::width() const {
     MOJO_RELEASE_ASSERT(m_initialized);
-    return QWidget::width();
+    return QWidget::width() * m_devicePixelRatio;
 }
 
 int G3DWidget::height() const {
     MOJO_RELEASE_ASSERT(m_initialized);
-    return QWidget::height();
+    return QWidget::height()  * m_devicePixelRatio;
 }
 
 bool G3DWidget::hasFocus() const {
@@ -232,8 +251,8 @@ void G3DWidget::getRelativeMouseState(int& x, int& y, G3D::uint8& mouseButtons) 
     MOJO_RELEASE_ASSERT(m_initialized);
 
     QPoint p     = QWidget::mapFromGlobal(QCursor::pos());
-    x            = p.x();
-    y            = p.y();
+    x            = p.x() * m_devicePixelRatio;
+    y            = p.y() * m_devicePixelRatio;
     mouseButtons = 0;
 
     if (underMouse()) {
@@ -269,7 +288,7 @@ int G3DWidget::numJoysticks() const {
     return m_joy.size();
 }
 
-std::string G3DWidget::joystickName(unsigned int sticknum) const {
+G3D::String G3DWidget::joystickName(unsigned int sticknum) const {
     MOJO_RELEASE_ASSERT(m_initialized);
     MOJO_ASSERT(sticknum < ((unsigned int) m_joy.size()));
     return SDL_JoystickName(sticknum);
@@ -293,26 +312,26 @@ void G3DWidget::getJoystickState(unsigned int stickNum, G3D::Array<float>& axis,
     }
 }
 
-std::string G3DWidget::caption() {
+G3D::String G3DWidget::caption() {
     return m_settings.caption;
 }
 
-void G3DWidget::setCaption(const std::string&) {
+void G3DWidget::setCaption(const G3D::String&) {
 }
 
-std::string G3DWidget::getAPIVersion() const {
+G3D::String G3DWidget::getAPIVersion() const {
     return QT_VERSION_STR;
 }
 
-std::string G3DWidget::getAPIName() const {
+G3D::String G3DWidget::getAPIName() const {
     return "Qt";
 }
 
-std::string G3DWidget::className() const {
+G3D::String G3DWidget::className() const {
     return "G3DWidget";
 }
 
-void G3DWidget::getDroppedFilenames(G3D::Array<std::string>& files) {
+void G3DWidget::getDroppedFilenames(G3D::Array<G3D::String>& files) {
     files.clear();
     if (m_dropFileList.size() > 0) {
         files.append(m_dropFileList);
@@ -349,7 +368,7 @@ void G3DWidget::resizeEvent(QResizeEvent* e) {
         m_g3dWidgetOpenGLContext->update();
 
         if (m_renderDevice != NULL) {
-            handleResize(e->size().width(), e->size().height());
+            handleResize(e->size().width() * m_devicePixelRatio, e->size().height() * m_devicePixelRatio);
         }
     }
 }
@@ -374,10 +393,10 @@ void G3DWidget::mouseMoveEvent(QMouseEvent* mouseEvent) {
         e.motion.type  = G3D::GEventType::MOUSE_MOTION;
         e.motion.which = 0;
         e.motion.state = getG3DMouseButtonPressedFlags(mouseEvent->buttons());
-        e.motion.x     = mouseEvent->x();
-        e.motion.y     = mouseEvent->y();
-        e.motion.xrel  = (mouseEvent->pos() - m_mousePrevPos).x();
-        e.motion.yrel  = (mouseEvent->pos() - m_mousePrevPos).y();
+        e.motion.x     = mouseEvent->x() * m_devicePixelRatio;
+        e.motion.y     = mouseEvent->y() * m_devicePixelRatio;
+        e.motion.xrel  = (mouseEvent->pos() - m_mousePrevPos).x() * m_devicePixelRatio;
+        e.motion.yrel  = (mouseEvent->pos() - m_mousePrevPos).y() * m_devicePixelRatio;
 
         m_mousePrevPos = mouseEvent->pos();
 
@@ -391,8 +410,8 @@ void G3DWidget::mousePressEvent(QMouseEvent* mouseEvent) {
         e.button.type   = G3D::GEventType::MOUSE_BUTTON_DOWN;
         e.button.which  = 0;
         e.button.state  = G3D::GButtonState::PRESSED;
-        e.button.x      = mouseEvent->x();
-        e.button.y      = mouseEvent->y();
+        e.button.x      = mouseEvent->x() * m_devicePixelRatio;
+        e.button.y      = mouseEvent->y() * m_devicePixelRatio;
         e.button.button = getG3DMouseButtonPressedIndex(mouseEvent->buttons());
 
         m_mousePressEventButtons = mouseEvent->buttons();
@@ -407,8 +426,8 @@ void G3DWidget::mouseReleaseEvent(QMouseEvent* mouseEvent) {
         e.button.type   = G3D::GEventType::MOUSE_BUTTON_UP;
         e.button.which  = 0;
         e.button.state  = G3D::GButtonState::RELEASED;
-        e.button.x      = mouseEvent->x();
-        e.button.y      = mouseEvent->y();
+        e.button.x      = mouseEvent->x() * m_devicePixelRatio;
+        e.button.y      = mouseEvent->y() * m_devicePixelRatio;
         e.button.button = getG3DMouseButtonPressedIndex(m_mousePressEventButtons);
 
         m_mousePressEventButtons = Qt::NoButton;
@@ -434,16 +453,15 @@ void G3DWidget::dropEvent(QDropEvent* dropEvent) {
     if (m_initialized) {
         m_dropFileList.clear();
         Q_FOREACH(QUrl url, dropEvent->mimeData()->urls()) {
-            m_dropFileList.append(url.toLocalFile().toStdString());
+            m_dropFileList.append(G3D::String(url.toLocalFile().toLatin1()));
         }
 
         dropEvent->acceptProposedAction();
 
         G3D::GEvent e;
-
         e.drop.type = G3D::GEventType::FILE_DROP;
-        e.drop.x    = dropEvent->pos().x();
-        e.drop.y    = dropEvent->pos().y();
+        e.drop.x    = dropEvent->pos().x() * m_devicePixelRatio;
+        e.drop.y    = dropEvent->pos().y() * m_devicePixelRatio;
 
         fireEvent(e);
     }
@@ -462,8 +480,8 @@ void G3DWidget::keyPressEvent(QKeyEvent* k) {
         G3D::GEvent e;
         e.type = G3D::GEventType::CHAR_INPUT;
 
-        if (k->text().toAscii().length()) {
-            e.character.unicode = k->text().toAscii().at(0);
+        if (k->text().toLatin1().length()) {
+            e.character.unicode = k->text().toLatin1().at(0);
         } else {
             e.character.unicode = 0;
         }
@@ -485,12 +503,12 @@ void G3DWidget::keyReleaseEvent(QKeyEvent* k) {
     }
 }
 
-std::string G3DWidget::_clipboardText() const {
+G3D::String G3DWidget::_clipboardText() const {
     MOJO_RELEASE_ASSERT(m_initialized);
-    return QApplication::clipboard()->text().toStdString();
+    return G3D::String(QApplication::clipboard()->text().toLatin1());
 }
 
-void G3DWidget::_setClipboardText(const std::string& text) const {
+void G3DWidget::_setClipboardText(const G3D::String& text) const {
     MOJO_RELEASE_ASSERT(m_initialized);
     QApplication::clipboard()->setText(text.c_str());
 }

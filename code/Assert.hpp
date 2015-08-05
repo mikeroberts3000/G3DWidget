@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include <QtGui/QMessageBox>
+#include <QtWidgets/QMessageBox>
 
 #include "Printf.hpp"
 #include "ToString.hpp"

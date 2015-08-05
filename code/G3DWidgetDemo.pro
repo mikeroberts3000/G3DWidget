@@ -1,78 +1,73 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2013-03-29T02:37:26
+# Project created by QtCreator 2015-08-04T19:03:57
 #
 #-------------------------------------------------
 
-TARGET   = G3DWidgetDemo
+QT += core widgets webkitwidgets
+
+TARGET = G3DWidgetDemo
+
+CONFIG += console
+CONFIG -= app_bundle
+CONFIG += c++11
+
 TEMPLATE = app
 
-QT     += core gui webkit
-CONFIG -= app_bundle
-CONFIG += console
+QMAKE_CXXFLAGS_WARN_ON  = ""
+QMAKE_CXXFLAGS         += -msse4.1 -Wno-unknown-pragmas
 
-CONFIG(debug,   debug|release): DEFINES += MOJO_DEBUG
-CONFIG(release, debug|release): DEFINES += MOJO_RELEASE
-
-QMAKE_CXXFLAGS_WARN_ON += "-Wno-unused-parameter"
-QMAKE_CXXFLAGS_RELEASE -= -O2
-QMAKE_CXXFLAGS_RELEASE += -O4 -g
-QMAKE_CXXFLAGS_DEBUG   += -fasm-blocks
-QMAKE_LFLAGS_RELEASE   -= -O2
-QMAKE_LFLAGS_RELEASE   += -O4 -g
-
-QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.8
+QMAKE_OBJECTIVE_CFLAGS_WARN_ON  = ""
+QMAKE_OBJECTIVE_CFLAGS         += -msse4.1 -Wno-unknown-pragmas
 
 INCLUDEPATH +=              \
     /opt/local/include      \
-    /usr/X11/include        \
-    $(G3D9DATA)/../include/ \
+    ${G3D10DATA}/../include \
 
-LIBS +=                     \
-    -framework Cocoa        \
-    -framework OpenGL       \
-    -framework IOKit        \
-    -framework SDL          \
-    -lz                     \
-    -L"$(G3D9DATA)/../lib/" \
-    -lassimp                \
-    -lavcodec.54            \
-    -lavformat.54           \
-    -lavutil.51             \
-    -lfreeimage             \
-    -lglfw                  \
-    -lswscale.2             \
-    -lzip                   \
-    -lenet                  \
+LIBS +=                      \
+    -F"/Library/Frameworks/" \
+    -L"${G3D10DATA}/../lib/" \
+    -framework Cocoa         \
+    -framework CoreVideo     \
+    -framework OpenGL        \
+    -framework SDL           \
+    -lavcodec.56             \
+    -lavformat.56            \
+    -lavutil.54              \
+    -lfmod                   \
+    -lfreeimage              \
+    -lswscale.3              \
+    -lz                      \
 
-CONFIG(debug,   release|debug):LIBS += -lG3Dd -lGLG3Dd
-CONFIG(release, release|debug):LIBS += -lG3D  -lGLG3D
-
-FORMS += \
-    MainWindow.ui
+CONFIG(debug,   release|debug):LIBS += -lG3Dd -lGLG3Dd -lassimpd -lcivetwebd -lenetd -lglewd -lglfwd -lnfdd -lzipd
+CONFIG(release, release|debug):LIBS += -lG3D  -lGLG3D  -lassimp  -lcivetweb  -lenet  -lglew  -lglfw  -lnfd  -lzip
 
 HEADERS +=                     \
     Assert.hpp                 \
-    G3DWidget.hpp              \
-    G3DWidgetOpenGLContext.hpp \
-    MainWindow.hpp             \
-    PixelShaderApp.hpp         \
     Printf.hpp                 \
-    QtUtil.hpp                 \
-    StarterApp.hpp             \
     ToString.hpp               \
+    QtUtil.hpp                 \
+    G3DWidgetOpenGLContext.hpp \
+    G3DWidget.hpp              \
+    PixelShaderApp.hpp         \
+    StarterApp.hpp             \
+    MainWindow.hpp             \
 
 SOURCES +=             \
-    Main.cpp           \
-    MainWindow.cpp     \
-    PixelShaderApp.cpp \
-    StarterApp.cpp     \
     Printf.cpp         \
     G3DWidget.cpp      \
+    PixelShaderApp.cpp \
+    StarterApp.cpp     \
+    MainWindow.cpp     \
+    Main.cpp           \
 
 OBJECTIVE_SOURCES +=          \
     G3DWidgetOpenGLContext.mm \
 
+FORMS += \
+    MainWindow.ui
+
 QMAKE_POST_LINK +=               \
     cp ../bin/*     $$OUT_PWD && \
-    cp ../shaders/* $$OUT_PWD    \
+    cp ../shaders/* $$OUT_PWD && \
+    install_name_tool -change "@rpath/libfmod.dylib" "@loader_path/libfmod.dylib" $$OUT_PWD/${TARGET} \

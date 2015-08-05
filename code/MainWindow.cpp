@@ -1,10 +1,8 @@
 #include "MainWindow.hpp"
 
-#include <boost/type_traits.hpp>
-
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QLabel>
-#include <QtWebKit/QWebView>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QLabel>
+#include <QtWebKitWidgets/QWebView>
 
 #include <GLG3D/RenderDevice.h>
 #include <GLG3D/GApp.h>
@@ -88,16 +86,16 @@ void MainWindow::paintEvent(QPaintEvent* e) {
         // GLG3D::GApps. Note that the G3DWidget we pass in to each GLG3D::GApp constructor
         // must be current. Note also that the G3D::StarterApp and G3D::PixelShaderApp classes
         // created here are identical to those in the starter and pixelShader sample applications
-        // from the G3D 9.00 source code. 
+        // from the G3D 10.00 source code.
         //
         m_starterAppWidget->makeCurrent();
-        m_starterApp = std::tr1::shared_ptr<G3D::GApp>(new G3D::StarterApp(
+        m_starterApp = std::shared_ptr<G3D::GApp>(new G3D::StarterApp(
             G3D::GApp::Settings(),
             m_starterAppWidget,
             m_renderDevice.get()));
 
         m_pixelShaderAppWidget->makeCurrent();
-        m_pixelShaderApp = std::tr1::shared_ptr<G3D::GApp>(new G3D::PixelShaderApp(
+        m_pixelShaderApp = std::shared_ptr<G3D::GApp>(new G3D::PixelShaderApp(
             G3D::GApp::Settings(),
             m_pixelShaderAppWidget,
             m_renderDevice.get()));

@@ -5,14 +5,17 @@ namespace G3D
 
 PixelShaderApp::PixelShaderApp(const Settings& options, OSWindow* window, RenderDevice* rd) :
     GApp(options, window, rd),
-    diffuseScalar(0.6f),
-    specularScalar(0.5f),
+    lambertianScalar(0.6f),
+    glossyScalar(0.5f),
     reflect(0.1f),
-    shine(20.0f) {
+    smoothness(0.2f) {
 }
 
 void PixelShaderApp::onInit() {
+    GApp::onInit();
     createDeveloperHUD();
+    renderDevice->setSwapBuffersAutomatically(true);
+
     window()->setCaption("Pixel Shader Demo");
 
     ArticulatedModel::Specification spec;
@@ -27,9 +30,9 @@ void PixelShaderApp::onInit() {
     makeGui();
 
     // Color 1 is red
-    diffuseColorIndex = 1;
-    // Last color is white
-    specularColorIndex = colorList.size() - 1;
+    lambertianColorIndex = 1;
+    // The last color is white
+    glossyColorIndex = colorList.size() - 1;
 
     m_debugCamera->setPosition(Vector3(1.0f, 1.0f, 2.5f));
     m_debugCamera->setFieldOfView(45 * units::degrees(), FOVDirection::VERTICAL);
@@ -49,55 +52,56 @@ void PixelShaderApp::onInit() {
 
 void PixelShaderApp::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D) {
 
-    rd->clear();
+    m_gbuffer->setSpecification(m_gbufferSpecification);
+    m_gbuffer->resize(m_framebuffer->width(), m_framebuffer->height());
+    m_gbuffer->prepare(rd, activeCamera(), 0, -(float)previousSimTimeStep(), m_settings.depthGuardBandThickness, m_settings.colorGuardBandThickness);
 
-    rd->pushState(m_frameBuffer); {
-        rd->clear();
+    m_renderer->render(rd, m_framebuffer, m_depthPeelFramebuffer, scene()->lightingEnvironment(), m_gbuffer, surface3D);
+
+    rd->pushState(m_framebuffer); {
 
         rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
+        Array< shared_ptr<Surface> > mySurfaces;
+        // Pose our model based on the manipulator axes
+        model->pose(mySurfaces, manipulator->frame());
 
-        Draw::skyBox(rd, environment.environmentMapArray[0].texture, environment.environmentMapArray[0].constant);
+        // Set up shared arguments
+        Args args;
+        configureShaderArgs(args);
 
-        rd->pushState(); {
-            Array< shared_ptr<Surface> > mySurfaces;
-            // Pose our model based on the manipulator axes
-            model->pose(mySurfaces, manipulator->frame());
+        // Send model geometry to the graphics card
+        CFrame cframe;
+        for (int i = 0; i < mySurfaces.size(); ++i) {
 
-            // Set up shared arguments
-            Args args;
-            configureShaderArgs(args);
+            // Downcast to UniversalSurface to access its fields
+            shared_ptr<UniversalSurface> surface = dynamic_pointer_cast<UniversalSurface>(mySurfaces[i]);
+            if (notNull(surface)) {
+                surface->getCoordinateFrame(cframe);
+                rd->setObjectToWorldMatrix(cframe);
+                surface->gpuGeom()->setShaderArgs(args);
 
-            // Send model geometry to the graphics card
-            CFrame cframe;
-            for (int i = 0; i < mySurfaces.size(); ++i) {
-
-                // Downcast to UniversalSurface to access its fields
-                shared_ptr<UniversalSurface> surface = dynamic_pointer_cast<UniversalSurface>(mySurfaces[i]);
-                if (notNull(surface)) {
-                    surface->getCoordinateFrame(cframe);
-                    rd->setObjectToWorldMatrix(cframe);
-                    surface->gpuGeom()->setShaderArgs(args);
-
-                    // (If you want to manually set the material properties and vertex attributes
-                    // for shader args, they can be accessed from the fields of the gpuGeom.)
-                    LAUNCH_SHADER("phong.*", args);
-                }
+                // (If you want to manually set the material properties and vertex attributes
+                // for shader args, they can be accessed from the fields of the gpuGeom.)
+                LAUNCH_SHADER("phong.*", args);
             }
-        } rd->popState();
-
-        // Render other objects, e.g., the 3D widgets
-        Surface::render(rd, m_debugCamera->frame(), m_debugCamera->projection(), surface3D, surface3D, environment);
+        }
     } rd->popState();
 
-    // Perform gamma correction, bloom, and SSAA, and write to the native window frame buffer
-    m_film->exposeAndRender(rd, m_debugCamera->filmSettings(), m_colorBuffer0, 1);
+    //
+    // Note that explicitly calling swapBuffers in a GApp is not a supported
+    // usage scenario when using multiple G3DWidgets.
+    //
+    // swapBuffers();
+
+    rd->clear();
+    m_film->exposeAndRender(rd, m_debugCamera->filmSettings(), m_framebuffer->texture(0), 1);
 }
 
 
 void PixelShaderApp::configureShaderArgs(Args& args) {
-    const shared_ptr<Light>&  light   = environment.lightArray[0];
-    const Color3&       diffuseColor  = colorList[diffuseColorIndex].element(0).color(Color3::white()).rgb();
-    const Color3&       specularColor = colorList[specularColorIndex].element(0).color(Color3::white()).rgb();
+    const shared_ptr<Light>&  light  = scene()->lightingEnvironment().lightArray[0];
+    const Color3&    lambertianColor = colorList[lambertianColorIndex].element(0).color(Color3::white()).rgb();
+    const Color3&    glossyColor     = colorList[glossyColorIndex].element(0).color(Color3::white()).rgb();
 
 
     // Viewer
@@ -107,18 +111,17 @@ void PixelShaderApp::configureShaderArgs(Args& args) {
     args.setUniform("wsLight",              light->position().xyz().direction());
     args.setUniform("lightColor",           light->color);
     args.setUniform("ambient",              Color3(0.3f));
-    args.setUniform("environmentMap",      environment.environmentMapArray[0].texture);
-    args.setUniform("environmentConstant", environment.environmentMapArray[0].constant);
+    args.setUniform("environmentMap",       scene()->lightingEnvironment().environmentMapArray[0], Sampler::cubeMap());
 
-    // UniversalMaterial
-    args.setUniform("diffuseColor",         diffuseColor);
-    args.setUniform("diffuseScalar",        diffuseScalar);
+    // Material
+    args.setUniform("lambertianColor",      lambertianColor);
+    args.setUniform("lambertianScalar",     lambertianScalar);
 
-    args.setUniform("specularColor",        specularColor);
-    args.setUniform("specularScalar",       specularScalar);
+    args.setUniform("glossyColor",          glossyColor);
+    args.setUniform("glossyScalar",         glossyScalar);
 
-    args.setUniform("shine",                shine);
-    args.setUniform("reflect",              reflect);
+    args.setUniform("smoothness",           smoothness);
+    args.setUniform("reflectScalar",        reflect);
 }
 
 
@@ -139,30 +142,29 @@ void PixelShaderApp::makeColorList() {
 
 
 void PixelShaderApp::makeGui() {
-    shared_ptr<GuiWindow> gui = GuiWindow::create("UniversalMaterial Parameters");
+    const shared_ptr<GuiWindow>& gui = GuiWindow::create("Material Parameters");
     GuiPane* pane = gui->pane();
 
     pane->beginRow();
-    pane->addSlider("Lambertian", &diffuseScalar, 0.0f, 1.0f);
-    pane->addDropDownList("", colorList, &diffuseColorIndex)->setWidth(80);
+    pane->addSlider("Lambertian", &lambertianScalar, 0.0f, 1.0f);
+    pane->addDropDownList("", colorList, &lambertianColorIndex)->setWidth(80);
     pane->endRow();
 
     pane->beginRow();
-    pane->addSlider("Glossy",    &specularScalar, 0.0f, 1.0f);
-    pane->addDropDownList("", colorList, &specularColorIndex)->setWidth(80);
+    pane->addSlider("Glossy",    &glossyScalar, 0.0f, 1.0f);
+    pane->addDropDownList("", colorList, &glossyColorIndex)->setWidth(80);
     pane->endRow();
 
     pane->addSlider("Mirror",     &reflect, 0.0f, 1.0f);
-    pane->addSlider("Smoothness", &shine, 1.0f, 100.0f);
+    pane->addSlider("Smoothness", &smoothness, 0.0f, 1.0f);
 
     gui->pack();
     addWidget(gui);
-    gui->moveTo(Point2(10, 10));
-}
+    gui->moveTo(Point2(10, 10));}
 
 
 void PixelShaderApp::makeLighting() {
-    environment.lightArray.append(Light::directional("Light", Vector3(1.0f, 1.0f, 1.0f), Color3(1.0f), false));
+    scene()->insert(Light::directional("Light", Vector3(1.0f, 1.0f, 1.0f), Color3(1.0f), false));
 
     // The environmentMap is a cube of six images that represents the incoming light to the scene from
     // the surrounding environment.  G3D specifies all six faces at once using a wildcard and loads
@@ -172,17 +174,11 @@ void PixelShaderApp::makeLighting() {
     environmentMapTexture.filename   = FilePath::concat(System::findDataFile("noonclouds"), "noonclouds_*.png");
 
     environmentMapTexture.dimension  = Texture::DIM_CUBE_MAP;
-    environmentMapTexture.settings   = Texture::Settings::cubeMap();
+
     environmentMapTexture.preprocess = Texture::Preprocess::gamma(2.1f);
-    // Reduce memory size required to work on older GPUs
-    environmentMapTexture.preprocess.scaleFactor = 0.25f;
-    environmentMapTexture.settings.interpolateMode = Texture::BILINEAR_NO_MIPMAP;
-
-    environment.environmentMapArray.append(Texture::create(environmentMapTexture), 1.0f);
-}
-
-void PixelShaderApp::onWait(RealTime)
-{
+    environmentMapTexture.generateMipMaps = true;
+    scene()->lightingEnvironment().environmentMapArray.append(Texture::create(environmentMapTexture));
+    scene()->insert(Skybox::create("Skybox", &*scene(), scene()->lightingEnvironment().environmentMapArray, Array<SimTime>(0), 0.0f, SplineExtrapolationMode::CLAMP, false, false));
 }
 
 }

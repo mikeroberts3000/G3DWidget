@@ -11,23 +11,21 @@ class PixelShaderApp : public GApp {
 private:
     shared_ptr<ArticulatedModel>         model;
 
-    LocalLightingEnvironment             environment;
+    float                                lambertianScalar;
+    int                                  lambertianColorIndex;
 
-    float                                diffuseScalar;
-    int                                  diffuseColorIndex;
-
-    float                                specularScalar;
-    int                                  specularColorIndex;
+    float                                glossyScalar;
+    int                                  glossyColorIndex;
 
     float                                reflect;
-    float                                shine;
+    float                                smoothness;
 
     ////////////////////////////////////
     // GUI
 
     /** For dragging the model */
     shared_ptr<ThirdPersonManipulator>   manipulator;
-    Array<GuiText>                  colorList;
+    Array<GuiText>                       colorList;
 
     void makeGui();
     void makeColorList();
@@ -40,8 +38,6 @@ public:
 
     virtual void onInit();
     virtual void onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D);
-
-    virtual void onWait(RealTime waitTime);
 };
 
 }

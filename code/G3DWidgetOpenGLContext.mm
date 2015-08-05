@@ -1,6 +1,7 @@
-#import "G3DWidgetOpenGLContext.hpp"
-
+// needs to be imported before G3D
 #import <Cocoa/Cocoa.h>
+
+#import "G3DWidgetOpenGLContext.hpp"
 
 #import <OpenGL/gl.h>
 
@@ -15,7 +16,7 @@ namespace mojo
 {
 
 G3DWidgetOpenGLContext::G3DWidgetOpenGLContext(const G3D::OSWindow::Settings& settings) :
-    m_nsOpenGLContext(nil) {
+    m_nsOpenGLContext(NULL) {
     G3D::Array<NSOpenGLPixelFormatAttribute> nsOpenGLPixelFormatAttributes;
 
     nsOpenGLPixelFormatAttributes.append(NSOpenGLPFADoubleBuffer);
@@ -40,17 +41,18 @@ G3DWidgetOpenGLContext::G3DWidgetOpenGLContext(const G3D::OSWindow::Settings& se
         nsOpenGLPixelFormatAttributes.append(NSOpenGLPFAAccelerated);
     }
 
-    nsOpenGLPixelFormatAttributes.append(NSOpenGLPFAWindow);
+    nsOpenGLPixelFormatAttributes.append(NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core);
+
     nsOpenGLPixelFormatAttributes.append(0);
 
     NSOpenGLPixelFormat* nsOpenGLPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes: nsOpenGLPixelFormatAttributes.getCArray()];
-    MOJO_RELEASE_ASSERT(nsOpenGLPixelFormat != nil);
+    MOJO_RELEASE_ASSERT(nsOpenGLPixelFormat != NULL);
 
-    m_nsOpenGLContext = [[NSOpenGLContext alloc] initWithFormat: nsOpenGLPixelFormat shareContext: nil];
-    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != nil);
+    m_nsOpenGLContext = [[NSOpenGLContext alloc] initWithFormat: nsOpenGLPixelFormat shareContext: NULL];
+    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != NULL);
 
     [nsOpenGLPixelFormat release];
-    nsOpenGLPixelFormat = nil;
+    nsOpenGLPixelFormat = NULL;
 
     GLint swapInterval = settings.asynchronous ? 0 : 1;
     [m_nsOpenGLContext setValues: &swapInterval forParameter:NSOpenGLCPSwapInterval];
@@ -91,12 +93,12 @@ G3DWidgetOpenGLContext::G3DWidgetOpenGLContext(const G3D::OSWindow::Settings& se
 }
 
 G3DWidgetOpenGLContext::~G3DWidgetOpenGLContext() {
-    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != nil);
+    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != NULL);
 
     SDL_Quit();
 
     [m_nsOpenGLContext release];
-    m_nsOpenGLContext = nil;
+    m_nsOpenGLContext = NULL;
 }
 
 void G3DWidgetOpenGLContext::getSettings(G3D::OSWindow::Settings &settings) const {
@@ -104,25 +106,25 @@ void G3DWidgetOpenGLContext::getSettings(G3D::OSWindow::Settings &settings) cons
 }
 
 void G3DWidgetOpenGLContext::setView(WId winId) {
-    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != nil);
+    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != NULL);
 
     [m_nsOpenGLContext setView: (NSView*)winId];
 }
 
 void G3DWidgetOpenGLContext::update() {
-    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != nil);
+    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != NULL);
 
     [m_nsOpenGLContext update];
 }
 
 void G3DWidgetOpenGLContext::makeCurrent() {
-    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != nil);
+    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != NULL);
 
     [m_nsOpenGLContext makeCurrentContext];
 }
 
 void G3DWidgetOpenGLContext::flushBuffer() {
-    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != nil);
+    MOJO_RELEASE_ASSERT(m_nsOpenGLContext != NULL);
 
     [m_nsOpenGLContext flushBuffer];
 }

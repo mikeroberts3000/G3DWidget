@@ -11,11 +11,7 @@ class NSOpenGLContext;
 class NSView;
 #endif
 
-#ifdef Q_WS_MAC32
-typedef int WId;
-#else
-typedef long WId;
-#endif
+typedef unsigned long long WId;
 
 namespace mojo
 {

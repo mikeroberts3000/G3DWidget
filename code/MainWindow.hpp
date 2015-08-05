@@ -2,10 +2,10 @@
 #define MAIN_WINDOW_HPP
 
 #include <string>
-#include <tr1/memory>
+#include <memory>
 
 #include <QtCore/QTimer>
-#include <QtGui/QMainWindow>
+#include <QtWidgets/QMainWindow>
 
 #include "ui_MainWindow.h"
 
@@ -37,15 +37,15 @@ private slots:
     void onTimerTimeout();
 
 private:
-    std::tr1::shared_ptr<Ui::MainWindow>         m_ui;
-    std::tr1::shared_ptr<G3DWidgetOpenGLContext> m_g3dWidgetOpenGLContext;
-    std::tr1::shared_ptr<G3D::RenderDevice>      m_renderDevice;
-    std::tr1::shared_ptr<G3D::GApp>              m_starterApp;
-    std::tr1::shared_ptr<G3D::GApp>              m_pixelShaderApp;
-    G3DWidget*                                   m_starterAppWidget;
-    G3DWidget*                                   m_pixelShaderAppWidget;
-    QTimer*                                      m_timer;
-    bool                                         m_g3dWidgetsInitialized;
+    std::shared_ptr<Ui::MainWindow>         m_ui;
+    std::shared_ptr<G3DWidgetOpenGLContext> m_g3dWidgetOpenGLContext;
+    std::shared_ptr<G3D::RenderDevice>      m_renderDevice;
+    std::shared_ptr<G3D::GApp>              m_starterApp;
+    std::shared_ptr<G3D::GApp>              m_pixelShaderApp;
+    G3DWidget*                              m_starterAppWidget;
+    G3DWidget*                              m_pixelShaderAppWidget;
+    QTimer*                                 m_timer;
+    bool                                    m_g3dWidgetsInitialized;
 };
 
 }

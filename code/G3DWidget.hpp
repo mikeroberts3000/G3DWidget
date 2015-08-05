@@ -1,9 +1,9 @@
 #ifndef G3D_WIDGET_HPP
 #define G3D_WIDGET_HPP
 
-#include <tr1/memory>
+#include <memory>
 
-#include <QtGui/QWidget>
+#include <QtWidgets/QWidget>
 
 #include <GLG3D/OSWindow.h>
 
@@ -29,8 +29,8 @@ class G3DWidget : public QWidget, public G3D::OSWindow
 
 public:
     G3DWidget(
-        std::tr1::shared_ptr<G3DWidgetOpenGLContext> g3dWidgetOpenGLContext,
-        std::tr1::shared_ptr<G3D::RenderDevice>      renderDevice,
+        std::shared_ptr<G3DWidgetOpenGLContext> g3dWidgetOpenGLContext,
+        std::shared_ptr<G3D::RenderDevice>      renderDevice,
         QWidget* parent = NULL);
 
     virtual ~G3DWidget();
@@ -69,17 +69,17 @@ public:
     virtual void setMouseVisible(bool);
 
     virtual int numJoysticks() const;
-    virtual std::string joystickName(unsigned int sticknum) const;
+    virtual G3D::String joystickName(unsigned int sticknum) const;
     virtual void getJoystickState(unsigned int stickNum, G3D::Array<float>& axis, G3D::Array<bool>& button) const;
 
-    virtual std::string caption();
-    virtual void setCaption(const std::string&);
+    virtual G3D::String caption();
+    virtual void setCaption(const G3D::String&);
 
-    virtual std::string getAPIVersion() const;
-    virtual std::string getAPIName() const;
-    virtual std::string className() const;
+    virtual G3D::String getAPIVersion() const;
+    virtual G3D::String getAPIName() const;
+    virtual G3D::String className() const;
 
-    virtual void getDroppedFilenames(G3D::Array<std::string>& files);
+    virtual void getDroppedFilenames(G3D::Array<G3D::String>& files);
 
     virtual void setInputCapture(bool);
     virtual void setFullPosition(int, int);
@@ -99,8 +99,8 @@ protected:
     virtual void keyPressEvent(QKeyEvent* e);
     virtual void keyReleaseEvent(QKeyEvent* e);
 
-    virtual std::string _clipboardText() const;
-    virtual void _setClipboardText(const std::string&) const;
+    virtual G3D::String _clipboardText() const;
+    virtual void _setClipboardText(const G3D::String&) const;
 
 private:
     G3D::uint8 getG3DMouseButtonPressedFlags(Qt::MouseButtons mouseButtons) const;
@@ -108,14 +108,16 @@ private:
 
     void keyEvent(QKeyEvent* keyEvent, G3D::GEvent& e);
 
-    std::tr1::shared_ptr<G3DWidgetOpenGLContext> m_g3dWidgetOpenGLContext;
-    bool                                         m_initialized;
-    QPoint                                       m_mousePrevPos;
-    Qt::MouseButtons                             m_mousePressEventButtons;
-    bool                                         m_mouseVisible;
-    G3D::Array<SDL_Joystick*>                    m_joy;
-    G3D::Array<std::string>                      m_dropFileList;
-    bool                                         m_previouslyActive;
+    std::shared_ptr<G3DWidgetOpenGLContext> m_g3dWidgetOpenGLContext;
+    bool                                    m_initialized;
+    QPoint                                  m_mousePrevPos;
+    Qt::MouseButtons                        m_mousePressEventButtons;
+    bool                                    m_mouseVisible;
+    G3D::Array<SDL_Joystick*>               m_joy;
+    G3D::Array<G3D::String>                 m_dropFileList;
+    bool                                    m_previouslyActive;
+    qreal                                   m_devicePixelRatio;
+    G3D::GApp*                              m_GApp;
 };
 
 }

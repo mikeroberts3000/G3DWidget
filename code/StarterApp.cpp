@@ -15,53 +15,25 @@ StarterApp::StarterApp(const GApp::Settings& settings, OSWindow* window, RenderD
 // automatically caught.
 void StarterApp::onInit() {
     GApp::onInit();
-
-    // This program renders to texture for most 3D rendering, so it can
-    // explicitly delay calling swapBuffers until the Film::exposeAndRender call,
-    // since that is the first call that actually affects the back buffer.  This
-    // reduces frame tearing without forcing vsync on.
-    renderDevice->setSwapBuffersAutomatically(false);
-
-    setFrameDuration(1.0f / 30.0f);
+    setFrameDuration(1.0f / 120.0f);
 
     // Call setScene(shared_ptr<Scene>()) or setScene(MyScene::create()) to replace
     // the default scene here.
 
-    showRenderingStats      = false;
-    m_showWireframe         = false;
+    showRenderingStats      = true;
 
-    makeGBuffer();
     makeGUI();
-
     // For higher-quality screenshots:
     // developerWindow->videoRecordDialog->setScreenShotFormat("PNG");
     // developerWindow->videoRecordDialog->setCaptureGui(false);
     developerWindow->cameraControlWindow->moveTo(Point2(developerWindow->cameraControlWindow->rect().x0(), 0));
-    loadScene(developerWindow->sceneEditorWindow->selectedSceneName());
-}
+    loadScene(
+        //"G3D Sponza"
+        "G3D Cornell Box" // Load something simple
+        //developerWindow->sceneEditorWindow->selectedSceneName()  // Load the first scene encountered
+        );
 
-
-void StarterApp::makeGBuffer() {
-    // If you do not use motion blur or deferred shading, you can avoid allocating the GBuffer here to save resources
-    GBuffer::Specification specification;
-
-    specification.format[GBuffer::Field::SS_POSITION_CHANGE]    = GLCaps::supportsTexture(ImageFormat::RG8()) ? ImageFormat::RG8() : ImageFormat::RGBA8();
-    specification.encoding[GBuffer::Field::SS_POSITION_CHANGE]  = Vector2(128.0f, -64.0f);
-
-    specification.format[GBuffer::Field::CS_FACE_NORMAL]        = ImageFormat::RGB8();
-    specification.encoding[GBuffer::Field::CS_FACE_NORMAL]      = Vector2(2.0f, -1.0f);
-
-    specification.format[GBuffer::Field::DEPTH_AND_STENCIL]     = ImageFormat::DEPTH32();
-    specification.depthEncoding = DepthEncoding::HYPERBOLIC;
-
-    m_gbuffer = GBuffer::create(specification);
-
-    m_gbuffer->resize(renderDevice->width(), renderDevice->height());
-    m_gbuffer->texture(GBuffer::Field::SS_POSITION_CHANGE)->visualization = Texture::Visualization::unitVector();
-
-    // Share the depth buffer with the forward-rendering pipeline
-    m_depthBuffer = m_gbuffer->texture(GBuffer::Field::DEPTH_AND_STENCIL);
-    m_frameBuffer->set(Framebuffer::DEPTH, m_depthBuffer);
+    dynamic_pointer_cast<DefaultRenderer>(m_renderer)->setOrderIndependentTransparency(false);
 }
 
 
@@ -72,10 +44,9 @@ void StarterApp::makeGUI() {
     developerWindow->videoRecordDialog->setEnabled(true);
 
     GuiPane* infoPane = debugPane->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
-    infoPane->addCheckBox("Show wireframe", &m_showWireframe);
 
     // Example of how to add debugging controls
-    infoPane->addLabel("You can add more GUI controls");
+    infoPane->addLabel("You can add GUI controls");
     infoPane->addLabel("in App::onInit().");
     infoPane->addButton("Exit", this, &StarterApp::endProgram);
     infoPane->pack();
@@ -92,74 +63,54 @@ void StarterApp::makeGUI() {
 
 
 void StarterApp::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurfaces) {
+    // This implementation is equivalent to the default GApp's. It is repeated here to make it
+    // easy to modify rendering. If you don't require custom rendering, just delete this
+    // method from your application and rely on the base class.
+
     if (! scene()) {
         return;
     }
 
-    // Bind the main frameBuffer
-    rd->pushState(m_frameBuffer); {
-        rd->setProjectionAndCameraMatrix(activeCamera()->projection(), activeCamera()->frame());
+    m_gbuffer->setSpecification(m_gbufferSpecification);
+    m_gbuffer->resize(m_framebuffer->width(), m_framebuffer->height());
+    m_gbuffer->prepare(rd, activeCamera(), 0, -(float)previousSimTimeStep(), m_settings.depthGuardBandThickness, m_settings.colorGuardBandThickness);
 
-        m_gbuffer->resize(rd->width(), rd->height());
-        m_gbuffer->prepare(rd, activeCamera(),  0, -(float)previousSimTimeStep(), m_settings.depthGuardBandThickness, m_settings.colorGuardBandThickness);
-        rd->clear();
+    m_renderer->render(rd, m_framebuffer, m_depthPeelFramebuffer, scene()->lightingEnvironment(), m_gbuffer, allSurfaces);
 
-        // Cull and sort
-        Array<shared_ptr<Surface> > sortedVisibleSurfaces;
-        Surface::cull(activeCamera()->frame(), activeCamera()->projection(), rd->viewport(), allSurfaces, sortedVisibleSurfaces);
-        Surface::sortBackToFront(sortedVisibleSurfaces, activeCamera()->frame().lookVector());
-
-        const bool renderTransmissiveSurfaces = false;
-
-        // Intentionally copy the lighting environment for mutation
-        LocalLightingEnvironment environment = scene()->localLightingEnvironment();
-        environment.ambientOcclusion = m_ambientOcclusion;
-
-        // Render z-prepass and G-buffer.  In this default implementation, it is needed if motion blur is enabled (for velocity) or
-        // if face normals have been allocated and ambient occlusion is enabled.
-        Surface::renderIntoGBuffer(rd, sortedVisibleSurfaces, m_gbuffer, activeCamera()->previousFrame(), renderTransmissiveSurfaces);
-
-        if (! m_settings.colorGuardBandThickness.isZero()) {
-            rd->setGuardBandClip2D(m_settings.colorGuardBandThickness);
-        }
-
-        // Compute AO
-        m_ambientOcclusion->update(rd, environment.ambientOcclusionSettings, activeCamera(), m_frameBuffer->texture(Framebuffer::DEPTH), shared_ptr<Texture>(), m_gbuffer->texture(GBuffer::Field::CS_FACE_NORMAL), m_gbuffer->specification().encoding[GBuffer::Field::CS_FACE_NORMAL], m_settings.depthGuardBandThickness - m_settings.colorGuardBandThickness);
-
-        // No need to write depth, since it was covered by the gbuffer pass
-        //rd->setDepthWrite(false);
-        // Compute shadow maps and forward-render visible surfaces
-        Surface::render(rd, activeCamera()->frame(), activeCamera()->projection(), sortedVisibleSurfaces, allSurfaces, environment, Surface::ALPHA_BINARY, true, m_settings.depthGuardBandThickness - m_settings.colorGuardBandThickness);
-
-        if (m_showWireframe) {
-            Surface::renderWireframe(rd, sortedVisibleSurfaces);
-        }
-
+    // Debug visualizations and post-process effects
+    rd->pushState(m_framebuffer); {
         // Call to make the App show the output of debugDraw(...)
+        rd->setProjectionAndCameraMatrix(activeCamera()->projection(), activeCamera()->frame());
         drawDebugShapes();
-        scene()->visualize(rd, sceneVisualizationSettings());
+        const shared_ptr<Entity>& selectedEntity = (notNull(developerWindow) && notNull(developerWindow->sceneEditorWindow)) ? developerWindow->sceneEditorWindow->selectedEntity() : shared_ptr<Entity>();
+        scene()->visualize(rd, selectedEntity, allSurfaces, sceneVisualizationSettings());
 
         // Post-process special effects
-        m_depthOfField->apply(rd, m_colorBuffer0, m_depthBuffer, activeCamera(), m_settings.depthGuardBandThickness - m_settings.colorGuardBandThickness);
+        m_depthOfField->apply(rd, m_framebuffer->texture(0), m_framebuffer->texture(Framebuffer::DEPTH), activeCamera(), m_settings.depthGuardBandThickness - m_settings.colorGuardBandThickness);
 
-        m_motionBlur->apply(rd, m_colorBuffer0, m_gbuffer->texture(GBuffer::Field::SS_POSITION_CHANGE),
-                            m_gbuffer->specification().encoding[GBuffer::Field::SS_POSITION_CHANGE], m_depthBuffer, activeCamera(),
+        m_motionBlur->apply(rd, m_framebuffer->texture(0), m_gbuffer->texture(GBuffer::Field::SS_EXPRESSIVE_MOTION),
+                            m_framebuffer->texture(Framebuffer::DEPTH), activeCamera(),
                             m_settings.depthGuardBandThickness - m_settings.colorGuardBandThickness);
-
     } rd->popState();
 
-    //
-    // Note that explicitly calling swapBuffers in a GApp is not a supported
-    // usage scenario when using multiple G3DWidgets.
-    //
-    // swapBuffers();
+    if ((submitToDisplayMode() == SubmitToDisplayMode::MAXIMIZE_THROUGHPUT) && (!renderDevice->swapBuffersAutomatically())) {
+        // We're about to render to the actual back buffer, so swap the buffers now.
+        // This call also allows the screenshot and video recording to capture the
+        // previous frame just before it is displayed.
+
+        //
+        // Note that explicitly calling swapBuffers in a GApp is not a supported
+        // usage scenario when using multiple G3DWidgets.
+        //
+        //swapBuffers();
+    }
 
     // Clear the entire screen (needed even though we'll render over it, since
     // AFR uses clear() to detect that the buffer is not re-used.)
     rd->clear();
 
     // Perform gamma correction, bloom, and SSAA, and write to the native window frame buffer
-    m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_colorBuffer0);
+    m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_framebuffer->texture(0));
 }
 
 
