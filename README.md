@@ -7,7 +7,7 @@ This repository contains the source code for G3DWidget. G3DWidget is a Qt Widget
 * __Mac OSX__. I'm using Yosemite 10.10.4, but this code should also work for other recent versions of Mac OSX. If you're not on Mac OSX, there is a minimal amount of very easy boilerplate OpenGL code you'll need to implement to get everything working. Drop me a line if you hit any roadblocks.
 * __XCode Commandline Tools__. I'm using XCode 4.5.2, but this code should also work for other recent versions of XCode.
   * https://developer.apple.com/downloads/index.action
-* __G3D10__. You'll need to be able to compile and link against the G3D10 headers and libraries.
+* __G3D10__. You'll need to be able to compile and link against the G3D10 headers and libraries. I'm using the latest code checked out directly from SVN, but this code should also work for other binary releases of G3D10.
   * https://g3d.codeplex.com/
 * __Qt__. You'll need to be able to compile and link against the Qt headers and libraries. I'm using Qt 5.5 but this code should also work for other recent versions of Qt.
   * https://www.qt.io/download-open-source/
