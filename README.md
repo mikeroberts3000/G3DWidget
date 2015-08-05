@@ -17,9 +17,8 @@ This repository contains the source code for G3DWidget. G3DWidget is a Qt Widget
 
 ### Build Instructions
 
-1. Build G3D 10.00 as outlined in G3D documentation.
-2. Build G3DWidget/Code/G3DWidgetDemo.pro in Qt Creator. In the Projects > Build and Run > Build Environment, be sure to add the G3D10DATA environment variable.
-3. Now you can run and debug the G3DWidgetDemo application.
+1. Build G3DWidget/Code/G3DWidgetDemo.pro in Qt Creator. In the Projects > Build and Run > Build Environment, be sure to add the G3D10DATA environment variable. This step assumes that you have access to the G3D10 headers and libraries, the Qt headers and libraries, and the Boost headers, as outlined above.
+2. Now you can run and debug the G3DWidgetDemo application.
 
 ### Usage Example
 
