@@ -4,24 +4,25 @@ This repository contains the source code for G3DWidget. G3DWidget is a Qt Widget
 
 ### Requirements
 
-* __Mac OSX__. I'm using Mountain Lion 10.8.4, but this code should also work for other recent versions of Mac OSX. If you're not on Mac OSX, there is a minimal amount of very easy boilerplate OpenGL code you'll need to implement to get everything working. Drop me a line if you hit any roadblocks.
+* __Mac OSX__. I'm using Yosemite 10.10.4, but this code should also work for other recent versions of Mac OSX. If you're not on Mac OSX, there is a minimal amount of very easy boilerplate OpenGL code you'll need to implement to get everything working. Drop me a line if you hit any roadblocks.
 * __XCode Commandline Tools__. I'm using XCode 4.5.2, but this code should also work for other recent versions of XCode.
   * https://developer.apple.com/downloads/index.action
-* __The G3D 9.00 Source Code__. You'll need to be able to build the G3D 9.00 source code.
-  * http://sourceforge.net/projects/g3d/files/g3d-cpp/9.00/G3D-9.00-src.zip/download
-* __The Qt SDK__. I'm using Qt 4.8.2 but this code should also work for other recent versions of Qt.
-  * http://download.qt-project.org/archive/qt/4.8/4.8.2/qt-mac-opensource-4.8.2.dmg
-* __Qt Creator__. I'm using Qt Creator 2.8.1 but this code should work for other recent versions of Qt Creator. Advanced users can work directly from the commandline using qmake and make. See the Qt Creator build output for guidance.
-  * http://download.qt-project.org/official_releases/qtcreator/2.8/2.8.1/qt-creator-mac-opensource-2.8.1.dmg
+* __The G3D 10.00 Source Code__. You'll need to be able to build the G3D 10.00 source code.
+  * I checked out the G3D10 source code from SVN using the command ```svn checkout https://g3d.svn.codeplex.com/svn/G3D10```
+* __The Qt SDK__. I'm using Qt 5.5 but this code should also work for other recent versions of Qt.
+  * https://www.qt.io/download-open-source/
+* __Qt Creator__. I'm using Qt Creator 3.4.2 but this code should work for other recent versions of Qt Creator. Advanced users can work directly from the commandline using qmake and make. See the Qt Creator build output for guidance.
+  * https://www.qt.io/download-open-source/
+* __Boost__. I'm using Boost 1.58, which I obtained from MacPorts, but this code should also work for other recent versions of Boost.
 
 ### Build Instructions
 
-1. Replace the files in G3D9-source/GLG3D.lib/... (part of the G3D 9.00 source code) with the files in G3DWidget/Code/GLG3D.lib/... (part of this GitHub repository). There are only 4 files that need to be replaced. This change to the G3D source code is neccesary to add support for multiple rendering windows. I tried to make the changes to the G3D source code is minimally intrusive as possible.
-2. Build G3D 9.00 as outlined in G3D documentation.
-3. Build G3DWidget/Code/G3DWidgetDemo.pro in Qt Creator. In the Projects > Build and Run > Manage Kits... > Build and Run > Kits menu, set the compiler to Clang (x86 64bit) and set your Qt mkspec to "unsupported/macx-clang". Depending on your exact version of Qt, the exact string you need to use for your Qt mkspec might vary slightly. In the Projects > Build and Run > Build Environment, be sure to add the G3D9DATA environment variable.
-4. Now you can run and debug the G3DWidgetDemo application.
+1. Build G3D 10.00 as outlined in G3D documentation.
+2. Build G3DWidget/Code/G3DWidgetDemo.pro in Qt Creator. In the Projects > Build and Run > Build Environment, be sure to add the G3D10DATA environment variable.
+3. Now you can run and debug the G3DWidgetDemo application.
 
 If you hit any roadblocks, you can check out my <a href='https://www.evernote.com/shard/s231/sh/8bb33cf0-d293-40b1-97e3-5a83e8a06ccf/ad73af4d68a2f062ad22c4557d5136cc'>development environment setup instructions</a>.
+
 ### Usage Example
 
 ```cpp
@@ -121,5 +122,3 @@ void MainWindow::onTimerTimeout() {
     m_pixelShaderAppWidget->update();
 }
 ```
-
-[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/249bed55fb0fcff9c1c23df10f8de899 "githalytics.com")](http://githalytics.com/mroberts3000/G3DWidget)
