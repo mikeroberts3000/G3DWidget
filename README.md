@@ -13,7 +13,7 @@ This repository contains the source code for G3DWidget. G3DWidget is a Qt Widget
   * https://www.qt.io/download-open-source/
 * __Qt Creator__. I'm using Qt Creator 3.4.2 but this code should work for other recent versions of Qt Creator. Advanced users can work directly from the commandline using qmake and make. See the Qt Creator build output for guidance.
   * https://www.qt.io/download-open-source/
-* __Boost__. I'm using Boost 1.58, which I obtained from MacPorts, but this code should also work for other recent versions of Boost.
+* __Boost__. You'll need to be able to compile against the Boost headers. I'm using Boost 1.58, which I obtained from MacPorts, but this code should also work for other recent versions of Boost.
 
 ### Build Instructions
 
